@@ -35,17 +35,20 @@ func All(v interface{}) error {
 			continue
 		}
 		actions := strings.Split(tagParams, ",")
-		if len(actions) < 1 || actions[0] != "yes" {
+		if len(actions) < 1 {
 			return ErrBadSyntax
 		}
 		if ok := isNotZero(f); !ok {
 			return ErrRequiredFailed
 		}
 		min, max, err := parse(actions[1:]...)
-		if err != nil || (min == 0 && max == 0) {
+		if err != nil {
 			return err
 		}
-		if ok := isValid(f, min, max); !ok {
+		if min == 0 && max == 0 && f.Type().Kind() != reflect.Struct {
+			continue
+		}
+		if ok := isValid(f, min, max, actions[0]); !ok {
 			return ErrRequiredFailed
 		}
 	}
@@ -59,7 +62,7 @@ func isNotZero(value reflect.Value) bool {
 	return !value.IsZero()
 }
 
-func isValid(value reflect.Value, min, max int) bool {
+func isValid(value reflect.Value, min, max int, action string) bool {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("recover: %v caused: %v\n", value, r)

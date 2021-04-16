@@ -13,7 +13,7 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 - `slices` -> length check
 
 ## Gotchas
-- Field names must be exported, else validation will not find any fields and returns no error
+- Field names must be exported else validation will not find any fields and returns no error
 - interface must be exported else validation will fail with `required.ErrRequiredFailed`
 
 ## Excluded types where tag has no effect
@@ -47,9 +47,10 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 ```
 
 ## Benchmarks
-| Benchmark                | ns/op        | B/op     | allocs/op      |
-| ------------------------ | ------------:| --------:| --------------:|
-| BenchmarkAllNoOptions-16 | 142 ns/op    | 24 B/op  | 2 allocs/op    |
-| BenchmarkAllMinMax-16    | 4501 ns/op   |1360 B/op | 50 allocs/op   |
+| Benchmark                | ns/op        | B/op      | allocs/op      |
+|:------------------------ | ------------:| ---------:| --------------:|
+|BenchmarkAllMinMax-16      | 4224 ns/op	  | 1360 B/op |  50 allocs/op  |
+|BenchmarkAllNoOptions-16   | 1340 ns/op	  | 240 B/op  | 20 allocs/op   |
+|BenchmarkAllMix-16         | 2151 ns/op	  | 544 B/op  | 27 allocs/op   |
 
 \*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`

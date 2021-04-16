@@ -93,6 +93,10 @@ type TestMaxLowerMin struct {
 	A string `required:"yes min=10, max=8"`
 }
 
+type TestStructRecursion struct {
+	A TestIntMinMax
+}
+
 func TestAll(t *testing.T) {
 	is := is.New(t)
 
@@ -180,6 +184,18 @@ func TestAll(t *testing.T) {
 			v:   TestScliceMinMax{A: []int{1, 2, 3, 4, 5, 6, 7, 8}},
 			err: ErrRequiredFailed,
 		},
+		{
+			v: TestStructRecursion{
+				A: TestIntMinMax{A: int32(14)},
+			},
+			err: nil,
+		},
+		{
+			v: TestStructRecursion{
+				A: TestIntMinMax{A: int32(2)},
+			},
+			err: ErrRequiredFailed,
+		},
 	}
 
 	for _, t := range tt {
@@ -230,7 +246,7 @@ type BenchTestMinMax struct {
 }
 
 func BenchmarkAllMinMax(b *testing.B) {
-
+	b.ReportAllocs()
 	tt := BenchTestMinMax{
 		A: "hello world",
 		B: "hello world",
@@ -249,33 +265,33 @@ func BenchmarkAllMinMax(b *testing.B) {
 }
 
 type BenchTest struct {
-	A string `required:"yes"`
-	B string `required:"yes"`
-	C string `required:"yes"`
-	D string `required:"yes"`
-	E string `required:"yes"`
-	F string `required:"yes"`
-	G string `required:"yes"`
-	H string `required:"yes"`
-	I string `required:"yes"`
-	J string `required:"yes"`
+	A string   `required:"yes"`
+	B int16    `required:"yes"`
+	C []string `required:"yes"`
+	D string   `required:"yes"`
+	E float64  `required:"yes"`
+	F uint32   `required:"yes"`
+	G []int    `required:"yes"`
+	H int64    `required:"yes"`
+	I string   `required:"yes"`
+	J string   `required:"yes"`
 }
 
 var result error
 
 func BenchmarkAllNoOptions(b *testing.B) {
-
+	b.ReportAllocs()
 	tt := BenchTest{
 		A: "hello world",
-		B: "hello world",
-		C: "hello world",
+		B: int16(16),
+		C: []string{"hello", "world"},
 		D: "hello world",
-		E: "hello world",
-		F: "hello world",
-		G: "hello world",
-		H: "hello world",
+		E: float64(64.64),
+		F: uint32(32),
+		G: []int{1, 2200, 444567, 1337},
+		H: int64(2000010),
 		I: "hello world",
-		J: "hello world",
+		J: "J is the last field in the struct",
 	}
 
 	var err error
@@ -284,4 +300,66 @@ func BenchmarkAllNoOptions(b *testing.B) {
 	}
 
 	result = err
+}
+
+type BenchTestMix struct {
+	A string          `required:"yes"`
+	B int16           `required:"yes, min=2, max=200"`
+	C []string        `required:"yes, min=1"`
+	D string          `required:"yes, min=5,max=12"`
+	E float64         `required:"yes"`
+	F uint32          `required:"yes"`
+	G []int           `required:"yes, max=20"`
+	H int64           `required:"yes"`
+	I string          `required:"yes"`
+	J BenchTestSubMix `required:"recursive"`
+}
+
+type BenchTestSubMix struct {
+	A []string `required:"yes, min=3"`
+	B float64  `required:"yes"`
+	C []string `required:"yes"`
+	D string   `required:"yes"`
+	E []int    `required:"yes, max=20"`
+	F uint32   `required:"yes, min=15"`
+	G []int    `required:"yes, min=1"`
+	H int64    `required:"yes"`
+	I string   `required:"yes"`
+	J int64    `required:"yes, max=3000"`
+}
+
+var result3 error
+
+func BenchmarkAllMix(b *testing.B) {
+	b.ReportAllocs()
+	tt := BenchTestMix{
+		A: "hello world",
+		B: int16(16),
+		C: []string{"hello", "world"},
+		D: "hello world",
+		E: float64(64.64),
+		F: uint32(32),
+		G: []int{1, 2200, 444567, 1337},
+		H: int64(2000010),
+		I: "hello world",
+		J: BenchTestSubMix{
+			A: []string{"Konstantin", "@", "Gasser", ".com"},
+			B: float64(160.12),
+			C: []string{"hello", ",", "world"},
+			D: "hello world v2.0",
+			E: []int{2, 6, 8, 16, 32, 64, 128},
+			F: uint32(24),
+			G: []int{24, 42},
+			H: int64(903510),
+			I: "hello world",
+			J: int64(2999),
+		},
+	}
+
+	var err error
+	for n := 0; n < b.N; n++ {
+		err = All(&tt)
+	}
+
+	result3 = err
 }
