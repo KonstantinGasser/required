@@ -1,19 +1,19 @@
 # required [![GoDoc](https://godoc.org/github.com/KonstantinGasser/required?status.png)](http://godoc.org/github.com/KonstantinGasser/required) ![Go Report Card](https://goreportcard.com/badge/github.com/KonstantinGasser/required)
 
-Small module helping with checking structs for Go. By adding `required:"yes"` to a struct field you can ensure that the field will not be the default value.
+Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value.
 
 ## Usage
 
 - `required:"yes"`: only checks if value not the default of type
 - `required:"yes, min=2, max=4"`: checks if value not the default and checks for conditions
 
-`min` and `max`:
+`min` and `max` works for following types:
 - `string` -> length check
 - `intX/uintX/floatX` -> obvious, right?
 - `slices` -> length check
 
 ## Gotchas
-- Field names must be exported else validation will not find any fields and returns no error
+- Field names must be exported, else validation will not find any fields and returns no error
 - interface must be exported else validation will fail with `required.ErrRequiredFailed`
 
 ## Excluded types where tag has no effect
