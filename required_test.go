@@ -55,29 +55,165 @@ func TestParse(t *testing.T) {
 	}
 }
 
-type TestAllStruct struct {
-	A string     `required:"yes, min=4,max=20"`
-	B int        `required:"yes,min=2,max=4"`
-	C int32      `required:"yes,min=2,max=4"`
-	D uint32     `required:"yes,min=2,max=4"`
-	E float32    `required:"yes,min=2,max=20"`
-	F *testing.T `required:"yes"`
+type TestStringNoOpts struct {
+	A string `required:"yes"`
+}
+
+type TestStringMinMax struct {
+	A string `required:"yes, min=4, max=15"`
+}
+
+type TestIntNoOpts struct {
+	A int16 `required:"yes"`
+}
+
+type TestIntMinMax struct {
+	A int32 `required:"yes, min=6,max=12"`
+}
+
+type TestPtr struct {
+	A *TestStringNoOpts `required:"yes"`
+}
+
+type TestSliceNoOpts struct {
+	A []int `required:"yes"`
+}
+type TestScliceMinMax struct {
+	A []int `required:"yes, min=3, max=7"`
+}
+
+type TestMinNA struct {
+	A string `required:"yes, min=two, max=4"`
+}
+type TestMaxNA struct {
+	A string `required:"yes, min=2, max=six"`
+}
+
+type TestMaxLowerMin struct {
+	A string `required:"yes min=10, max=8"`
 }
 
 func TestAll(t *testing.T) {
 	is := is.New(t)
 
-	tt := TestAllStruct{
-		A: "hello world",
-		B: 3,
-		C: int32(3),
-		D: uint32(3),
-		E: float32(12.6),
-		F: t,
+	tt := []struct {
+		v   interface{}
+		err error
+	}{
+		{
+			v:   TestMinNA{A: "does not matter"},
+			err: ErrNotANumber,
+		},
+		{
+			v:   TestMaxNA{A: "does not matter"},
+			err: ErrNotANumber,
+		},
+		{
+			v:   TestMaxLowerMin{A: "dose not matter"},
+			err: ErrMaxLowerMin,
+		},
+		{
+			v:   TestStringNoOpts{A: "hello world"},
+			err: nil,
+		},
+		{
+			v:   TestStringNoOpts{A: ""},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestStringMinMax{A: "hello world"},
+			err: nil,
+		},
+		{
+			v:   TestStringMinMax{A: "hel"},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestStringMinMax{A: "hello, this is a word or tow to long"},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestIntNoOpts{A: int16(42)},
+			err: nil,
+		},
+		{
+			v:   TestIntNoOpts{A: int16(0)},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestIntMinMax{A: int32(8)},
+			err: nil,
+		},
+		{
+			v:   TestIntMinMax{A: int32(5)},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestIntMinMax{A: int32(14)},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestPtr{A: &TestStringNoOpts{A: "hello"}},
+			err: nil,
+		},
+		{
+			v:   TestPtr{A: nil},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestSliceNoOpts{A: []int{24, 42}},
+			err: nil,
+		},
+		{
+			v:   TestScliceMinMax{A: []int{}},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestScliceMinMax{A: []int{1, 2}},
+			err: ErrRequiredFailed,
+		},
+		{
+			v:   TestScliceMinMax{A: []int{1, 2, 3, 4}},
+			err: nil,
+		},
+		{
+			v:   TestScliceMinMax{A: []int{1, 2, 3, 4, 5, 6, 7, 8}},
+			err: ErrRequiredFailed,
+		},
 	}
 
-	err := All(&tt)
-	is.NoErr(err)
+	for _, t := range tt {
+		switch t.v.(type) {
+		case TestStringNoOpts:
+			v, _ := t.v.(TestStringNoOpts)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestStringMinMax:
+			v, _ := t.v.(TestStringMinMax)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestIntNoOpts:
+			v, _ := t.v.(TestIntNoOpts)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestIntMinMax:
+			v, _ := t.v.(TestIntMinMax)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestPtr:
+			v, _ := t.v.(TestPtr)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestSliceNoOpts:
+			v, _ := t.v.(TestSliceNoOpts)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestScliceMinMax:
+			v, _ := t.v.(TestScliceMinMax)
+			err := All(&v)
+			is.Equal(err, t.err)
+		}
+	}
 }
 
 type BenchTestMinMax struct {
