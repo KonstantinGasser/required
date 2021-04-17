@@ -1,7 +1,7 @@
 # required [![GoDoc](https://godoc.org/github.com/KonstantinGasser/required?status.png)](http://godoc.org/github.com/KonstantinGasser/required) ![Go Report Card](https://goreportcard.com/badge/github.com/KonstantinGasser/required) [![codecov](https://codecov.io/gh/KonstantinGasser/required/branch/main/graph/badge.svg)](https://codecov.io/gh/KonstantinGasser/required) ![](https://travis-ci.com/KonstantinGasser/required.svg?branch=main)
 
 
-Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value.
+Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value and if required add conditions.
 
 ## Usage
 
@@ -12,10 +12,6 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 - `string` -> length check
 - `intX/uintX/floatX` -> obvious, right?
 - `slices` -> length check
-
-## Gotchas
-- Field names must be exported else validation will not find any fields and returns no error
-- interface must be exported else validation will fail with `required.ErrRequiredFailed`
 
 ## Excluded types where tag has no effect
 - `bool`: will be ignored

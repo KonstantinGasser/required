@@ -90,7 +90,7 @@ type TestMaxNA struct {
 }
 
 type TestMaxLowerMin struct {
-	A string `required:"yes min=10, max=8"`
+	A string `required:"yes, min=10, max=8"`
 }
 
 func TestAll(t *testing.T) {
@@ -109,7 +109,7 @@ func TestAll(t *testing.T) {
 			err: ErrNotANumber,
 		},
 		{
-			v:   TestMaxLowerMin{A: "dose not matter"},
+			v:   TestMaxLowerMin{A: "does not matter"},
 			err: ErrMaxLowerMin,
 		},
 		{
@@ -184,6 +184,14 @@ func TestAll(t *testing.T) {
 			v:   TestScliceMinMax{A: []int{1, 2, 3, 4, 5, 6, 7, 8}},
 			err: ErrConditionFail,
 		},
+		{
+			v:   0,
+			err: ErrNoPtr,
+		},
+		{
+			v:   nil,
+			err: ErrNoPtr,
+		},
 	}
 
 	for _, t := range tt {
@@ -215,6 +223,21 @@ func TestAll(t *testing.T) {
 		case TestScliceMinMax:
 			v, _ := t.v.(TestScliceMinMax)
 			err := All(&v)
+			is.Equal(err, t.err)
+		case TestMinNA:
+			v, _ := t.v.(TestMinNA)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestMaxNA:
+			v, _ := t.v.(TestMaxNA)
+			err := All(&v)
+			is.Equal(err, t.err)
+		case TestMaxLowerMin:
+			v, _ := t.v.(TestMaxLowerMin)
+			err := All(&v)
+			is.Equal(err, t.err)
+		default:
+			err := All(t.v)
 			is.Equal(err, t.err)
 		}
 	}
@@ -304,20 +327,6 @@ type BenchTestMix struct {
 	G []int    `required:"yes, max=20"`
 	H int64    `required:"yes"`
 	I string   `required:"yes"`
-	// J BenchTestSubMix `required:"recursive"`
-}
-
-type BenchTestSubMix struct {
-	A []string `required:"yes, min=3"`
-	B float64  `required:"yes"`
-	C []string `required:"yes"`
-	D string   `required:"yes"`
-	E []int    `required:"yes, max=20"`
-	F uint32   `required:"yes, min=15"`
-	G []int    `required:"yes, min=1"`
-	H int64    `required:"yes"`
-	I string   `required:"yes"`
-	J int64    `required:"yes, max=3000"`
 }
 
 var result3 error
@@ -334,18 +343,6 @@ func BenchmarkAllMix(b *testing.B) {
 		G: []int{1, 2200, 444567, 1337},
 		H: int64(2000010),
 		I: "hello world",
-		// J: BenchTestSubMix{
-		// 	A: []string{"Konstantin", "@", "Gasser", ".com"},
-		// 	B: float64(160.12),
-		// 	C: []string{"hello", ",", "world"},
-		// 	D: "hello world v2.0",
-		// 	E: []int{2, 6, 8, 16, 32, 64, 128},
-		// 	F: uint32(24),
-		// 	G: []int{24, 42},
-		// 	H: int64(903510),
-		// 	I: "hello world",
-		// 	J: int64(2999),
-		// },
 	}
 
 	var err error
