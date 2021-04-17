@@ -5,7 +5,7 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 
 ## Usage
 
-- `required:"yes"`: only checks if value not the default of type
+- `required:"yes"`: only checks if value not the default of type (tpye bool will be ignored since default could be intentionally)
 - `required:"yes, min=2, max=4"`: checks if value not the default and checks for conditions
 
 `min` and `max` works for following types:
@@ -13,13 +13,15 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 - `intX/uintX/floatX` -> obvious, right?
 - `slices` -> length check
 
-## Excluded types where tag has no effect
-- `bool`: will be ignored
-- `struct`: if struct is the empty struct validation will fail
-
 ## Example
 ```go
-import "github.com/KonstantinGasser/required"
+import (
+     "encoding/json"
+     "log"
+     "net/http"
+    
+     "github.com/KonstantinGasser/required"
+)
 
 type User struct {
     Username string `required:"yes, min=6, max=25"`
@@ -50,4 +52,4 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 |BenchmarkAllNoOptions-16  | 932673 |1410 ns/op  | 240 B/op  | 20 allocs/op   |
 |BenchmarkAllMix-16        | 599694 |1820 ns/op  | 456 B/op  | 20 allocs/op   |
 
-\*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`
+\*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`, third includes both non tagged simple tagged and tags with options
