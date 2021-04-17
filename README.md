@@ -48,10 +48,10 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 ```
 
 ## Benchmarks
-| Benchmark                | ns/op        | B/op      | allocs/op      |
-|:------------------------ | ------------:| ---------:| --------------:|
-|BenchmarkAllMinMax-16      | 4224 ns/op	  | 1360 B/op |  50 allocs/op  |
-|BenchmarkAllNoOptions-16   | 1340 ns/op	  | 240 B/op  | 20 allocs/op   |
-|BenchmarkAllMix-16         | 2151 ns/op	  | 544 B/op  | 27 allocs/op   |
+| Benchmark                | iters  | ns/op        | B/op      | allocs/op      |
+|:------------------------ |-------:|------------:| ---------:| --------------:|
+|BenchmarkAllMinMax-16     | 291532 |4119 ns/op  | 1200 B/op |  40 allocs/op  |
+|BenchmarkAllNoOptions-16  | 932673 |1410 ns/op  | 240 B/op  | 20 allocs/op   |
+|BenchmarkAllMix-16        | 599694 |1820 ns/op  | 456 B/op  | 20 allocs/op   |
 
 \*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`

@@ -10,48 +10,48 @@ func TestParse(t *testing.T) {
 	is := is.New(t)
 
 	tt := []struct {
-		Tag string
+		Tag []string
 		Max int
 		Min int
 		Err error
 	}{
 		{
-			Tag: "",
+			Tag: []string{},
 			Max: 0,
 			Min: 0,
 			Err: nil,
 		},
 		{
-			Tag: "min=4, max=6",
+			Tag: []string{"min=4", "max=6"},
 			Max: 6,
 			Min: 4,
 			Err: nil,
 		},
 		{
-			Tag: "min=4, max=0",
+			Tag: []string{"min=4", "max=0"},
 			Max: 0,
 			Min: 4,
-			Err: nil,
+			Err: ErrMaxLowerMin,
 		},
 		{
-			Tag: "min=0, max=4",
+			Tag: []string{"min=0", "max=4"},
 			Max: 4,
 			Min: 0,
 			Err: nil,
 		},
 		{
-			Tag: "min=1, max=6",
-			Max: 0,
-			Min: 0,
-			Err: ErrMaxLowerMin,
+			Tag: []string{"min=1", "max=6"},
+			Max: 6,
+			Min: 1,
+			Err: nil,
 		},
 	}
 
 	for _, tc := range tt {
-		min, max, err := parse(tc.Tag)
+		err := parse(tc.Tag...)
 		is.Equal(err, tc.Err)
-		is.Equal(max, tc.Max)
-		is.Equal(min, tc.Min)
+		is.Equal(maxValue, tc.Max)
+		is.Equal(minValue, tc.Min)
 	}
 }
 
@@ -93,10 +93,6 @@ type TestMaxLowerMin struct {
 	A string `required:"yes min=10, max=8"`
 }
 
-type TestStructRecursion struct {
-	A TestIntMinMax
-}
-
 func TestAll(t *testing.T) {
 	is := is.New(t)
 
@@ -122,7 +118,7 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestStringNoOpts{A: ""},
-			err: ErrRequiredFailed,
+			err: ErrDefaultFound,
 		},
 		{
 			v:   TestStringMinMax{A: "hello world"},
@@ -130,11 +126,11 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestStringMinMax{A: "hel"},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestStringMinMax{A: "hello, this is a word or tow to long"},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestIntNoOpts{A: int16(42)},
@@ -142,7 +138,7 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestIntNoOpts{A: int16(0)},
-			err: ErrRequiredFailed,
+			err: ErrDefaultFound,
 		},
 		{
 			v:   TestIntMinMax{A: int32(8)},
@@ -150,11 +146,11 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestIntMinMax{A: int32(5)},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestIntMinMax{A: int32(14)},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestPtr{A: &TestStringNoOpts{A: "hello"}},
@@ -162,7 +158,11 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestPtr{A: nil},
-			err: ErrRequiredFailed,
+			err: ErrDefaultFound,
+		},
+		{
+			v:   TestSliceNoOpts{A: nil},
+			err: ErrDefaultFound,
 		},
 		{
 			v:   TestSliceNoOpts{A: []int{24, 42}},
@@ -170,11 +170,11 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestScliceMinMax{A: []int{}},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestScliceMinMax{A: []int{1, 2}},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 		{
 			v:   TestScliceMinMax{A: []int{1, 2, 3, 4}},
@@ -182,19 +182,7 @@ func TestAll(t *testing.T) {
 		},
 		{
 			v:   TestScliceMinMax{A: []int{1, 2, 3, 4, 5, 6, 7, 8}},
-			err: ErrRequiredFailed,
-		},
-		{
-			v: TestStructRecursion{
-				A: TestIntMinMax{A: int32(14)},
-			},
-			err: nil,
-		},
-		{
-			v: TestStructRecursion{
-				A: TestIntMinMax{A: int32(2)},
-			},
-			err: ErrRequiredFailed,
+			err: ErrConditionFail,
 		},
 	}
 
@@ -307,16 +295,16 @@ func BenchmarkAllNoOptions(b *testing.B) {
 }
 
 type BenchTestMix struct {
-	A string          `required:"yes" m:"jhk"`
-	B int16           `required:"yes, min=2, max=200"`
-	C []string        `required:"yes, min=1"`
-	D string          `required:"yes, min=5,max=12"`
-	E float64         `required:"yes"`
-	F uint32          `required:"yes"`
-	G []int           `required:"yes, max=20"`
-	H int64           `required:"yes"`
-	I string          `required:"yes"`
-	J BenchTestSubMix `required:"recursive"`
+	A string   `required:"yes" m:"jhk"`
+	B int16    `required:"yes, min=2, max=200"`
+	C []string `required:"yes, min=1"`
+	D string   `required:"yes, min=5,max=12"`
+	E float64  `required:"yes"`
+	F uint32   `required:"yes"`
+	G []int    `required:"yes, max=20"`
+	H int64    `required:"yes"`
+	I string   `required:"yes"`
+	// J BenchTestSubMix `required:"recursive"`
 }
 
 type BenchTestSubMix struct {
@@ -346,18 +334,18 @@ func BenchmarkAllMix(b *testing.B) {
 		G: []int{1, 2200, 444567, 1337},
 		H: int64(2000010),
 		I: "hello world",
-		J: BenchTestSubMix{
-			A: []string{"Konstantin", "@", "Gasser", ".com"},
-			B: float64(160.12),
-			C: []string{"hello", ",", "world"},
-			D: "hello world v2.0",
-			E: []int{2, 6, 8, 16, 32, 64, 128},
-			F: uint32(24),
-			G: []int{24, 42},
-			H: int64(903510),
-			I: "hello world",
-			J: int64(2999),
-		},
+		// J: BenchTestSubMix{
+		// 	A: []string{"Konstantin", "@", "Gasser", ".com"},
+		// 	B: float64(160.12),
+		// 	C: []string{"hello", ",", "world"},
+		// 	D: "hello world v2.0",
+		// 	E: []int{2, 6, 8, 16, 32, 64, 128},
+		// 	F: uint32(24),
+		// 	G: []int{24, 42},
+		// 	H: int64(903510),
+		// 	I: "hello world",
+		// 	J: int64(2999),
+		// },
 	}
 
 	var err error
