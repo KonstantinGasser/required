@@ -41,14 +41,17 @@ func All(v interface{}) error {
 		if ok := isNotZero(f); !ok {
 			return ErrRequiredFailed
 		}
+		if len(actions) < 2 {
+			continue
+		}
 		min, max, err := parse(actions[1:]...)
 		if err != nil {
 			return err
 		}
-		if min == 0 && max == 0 && f.Type().Kind() != reflect.Struct {
+		if min == 0 && max == 0 {
 			continue
 		}
-		if ok := isValid(f, min, max, actions[0]); !ok {
+		if ok := isValid(f, min, max); !ok {
 			return ErrRequiredFailed
 		}
 	}
@@ -62,7 +65,7 @@ func isNotZero(value reflect.Value) bool {
 	return !value.IsZero()
 }
 
-func isValid(value reflect.Value, min, max int, action string) bool {
+func isValid(value reflect.Value, min, max int) bool {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("recover: %v caused: %v\n", value, r)
@@ -70,7 +73,7 @@ func isValid(value reflect.Value, min, max int, action string) bool {
 	}()
 	switch value.Type().Kind() {
 	case reflect.String:
-		v := value.Interface().(string)
+		v := value.String()
 		if (max != 0 && len(v) > max) || (min != 0 && len(v) < min) {
 			return false
 		}
@@ -108,7 +111,6 @@ func parse(opts ...string) (int, int, error) {
 	var min, max int
 	for _, opt := range opts {
 		v := strings.Split(opt, "=")
-
 		i, err := strconv.Atoi(v[1])
 		if err != nil {
 			return 0, 0, ErrNotANumber
