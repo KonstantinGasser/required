@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
 var (
-	// ErrNoPtr indicated that input type is no pointer
-	ErrNoPtr = errors.New("required: v of type interface{} in required.All must be pointer to a struct")
+	// ErrInvalidType indicated that input type is no pointer
+	ErrInvalidType = errors.New("required: arguments in required.Atomic must be pointer to a struct")
 	// ErrBadSyntax indicates a syntax error in the tag
 	ErrBadSyntax = errors.New("required: syntax for tag requires is wrong")
 
@@ -32,117 +31,126 @@ var (
 	maxValue = 0
 )
 
-// All verifies that all fields in a struct with a `required` tag
-// pass the tags condition(s)
-
-// All returns an error if fields tagged with `required` fail the validation.
-// if v is not a pointer to a struct All returns an ErrNoPtr error.
-// All is atomic which means that either all conditions pass with no error or
-// if one field fails the whole operation will fail with ErrConditionFail or ErrDefaultFound.
-// If one of the options evaluates to not a number All returns an ErrNotANumber error
-func All(v interface{}) error {
-	if ok := isPtr(reflect.ValueOf(v).Kind()); !ok {
-		return ErrNoPtr
-	}
-	_struct := reflect.ValueOf(v).Elem()
-	for i := 0; i < _struct.NumField(); i++ {
-		f := _struct.Field(i)
-		tag, ok := _struct.Type().Field(i).Tag.Lookup("required")
-		if !ok {
-			continue
+// Atomic evaluates each field in the struct(s) which are tagged with
+// the `required` tag. If the field value is its default value Atomic
+// returns an ErrDefaultFound error. In case options (min/max) are provided
+// in the tag, Atomic will return an ErrNotANumber if either option is
+// not a number. Lastly Atomic returns an ErrConditionFail in case the
+// field value does not satisfy the option(s)
+func Atomic(values ...interface{}) error {
+	for _, v := range values {
+		// interface value must be a pointer else reflect.ValueOf(v).Elem()
+		// will panic
+		if ok := isAllowedType(v); !ok {
+			return ErrInvalidType
 		}
-		actions := strings.Split(tag, ",")
-		if ok := isNotZero(f); !ok {
-			return ErrDefaultFound
-		}
-		if len(actions) < 2 {
-			continue
-		}
-		err := parse(actions[1:]...)
-		if err != nil {
-			return err
-		}
-		if minValue == 0 && maxValue == 0 {
-			continue
-		}
-		if ok := isValid(f); !ok {
-			return ErrConditionFail
+		_struct := reflect.ValueOf(v).Elem()
+		for i := 0; i < _struct.NumField(); i++ {
+			f := _struct.Field(i)
+			tag, ok := _struct.Type().Field(i).Tag.Lookup("required")
+			if !ok {
+				continue
+			}
+			if ok := isNotZero(f); !ok {
+				return ErrDefaultFound
+			}
+			actions := strings.Split(tag, ",")
+			if len(actions) < 2 {
+				continue
+			}
+			err := parse(actions[1:]...)
+			if err != nil {
+				return err
+			}
+			if minValue == 0 && maxValue == 0 {
+				continue
+			}
+			if ok := isValid(f); !ok {
+				return ErrConditionFail
+			}
 		}
 	}
 	return nil
 }
 
-// isValid validates whether the value follows the
-// tag options (min,max). For intX,uintX,floatX comparison
-// is min <= value <= max. For slices and arrays min <= len(value) <= max
-func isValid(value reflect.Value) bool {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("recover: %v\n", r)
+// Debug does the same as Atomic however if a conditions fails
+// it will not return immediately but rather continue looping through
+// the struct(s) collecting all field names which value failed the
+// tag conditions. Since no field will be excluded this operation is
+// fare more expensive then the Atomic function and generally intended
+// for well debugging.
+func Debug(values ...interface{}) Issues {
+	var issues Issues = make(Issues, len(values))
+
+	for k, v := range values {
+		if ok := isAllowedType(v); !ok {
+			return nil
 		}
-	}()
-	switch value.Type().Kind() {
-	case reflect.String:
-		v := value.String()
-		if (maxValue != 0 && len(v) > maxValue) || (minValue != 0 && len(v) < minValue) {
-			return false
+		_struct := reflect.ValueOf(v).Elem()
+		issues[k] = []Issue{}
+		for i := 0; i < _struct.NumField(); i++ {
+			f := _struct.Field(i)
+			tag, ok := _struct.Type().Field(i).Tag.Lookup("required")
+			if !ok {
+				continue
+			}
+			if ok := isNotZero(f); !ok {
+				issues[k] = append(issues[k], Issue{
+					Struct: _struct.Type().Name(),
+					Name:   _struct.Type().Field(i).Name,
+					Err:    fmt.Sprintf("field value is its default value: <%v>", f.Interface()),
+				})
+				continue
+			}
+			actions := strings.Split(tag, ",")
+			if len(actions) < 2 {
+				continue
+			}
+			err := parse(actions[1:]...)
+			if err != nil {
+				issues[k] = append(issues[k], Issue{
+					Struct: _struct.Type().Name(),
+					Name:   _struct.Type().Field(i).Name,
+					Err:    fmt.Sprintf("tag does has wrong syntax: %s", tag),
+				})
+				continue
+			}
+			if minValue == 0 && maxValue == 0 {
+				continue
+			}
+			if ok := isValid(f); !ok {
+				issues[k] = append(issues[k], Issue{
+					Struct: _struct.Type().Name(),
+					Name:   _struct.Type().Field(i).Name,
+					Err:    fmt.Sprintf("field valid does not align with conditions: %v != %v", f.Interface(), actions[1:]),
+				})
+				continue
+			}
 		}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v := value.Int()
-		if (maxValue != 0 && v > int64(maxValue)) || (minValue != 0 && v < int64(minValue)) {
-			return false
-		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		v := value.Uint()
-		if (minValue != 0 && v < uint64(minValue)) || (maxValue != 0 && v > uint64(maxValue)) {
-			return false
-		}
-	case reflect.Float32:
-		v := value.Float()
-		if (maxValue != 0 && v > float64(maxValue)) || (minValue != 0 && v < float64(minValue)) {
-			return false
-		}
-	case reflect.Slice, reflect.Array:
-		v := value.Len()
-		if (maxValue != 0 && v > maxValue) || (minValue != 0 && v < minValue) {
-			return false
-		}
-	default:
-		return true
 	}
-	return true
+	return issues
 }
 
-// parse assigns the min and max value from the tag
-// options. in -> "min=42","max=99". If either option
-// holds not a number parse returns a ErrNotANumber error
-func parse(opts ...string) error {
-	for _, opt := range opts {
-		v := strings.Split(opt, "=")
-		i, err := strconv.Atoi(v[1])
-		if err != nil {
-			return ErrNotANumber
-		}
-		if strings.TrimSpace(v[0]) == "max" {
-			maxValue = i
-		}
-		if strings.TrimSpace(v[0]) == "min" {
-			minValue = i
-		}
-	}
-	if minValue != 0 && len(opts) > 1 && maxValue < minValue {
-		return ErrMaxLowerMin
-	}
-	return nil
+// Issues represents any issue found during debugging
+type Issues [][]Issue
+
+type Issue struct {
+	Struct string
+	Name   string
+	Err    string
 }
 
-func isPtr(kind reflect.Kind) bool {
-	return (kind == reflect.Ptr)
-}
-
-func isNotZero(v reflect.Value) bool {
-	if ok := v.IsValid(); !ok {
-		return false
+// Pretty formats the issues in a descriptive way
+func (issues Issues) Pretty() {
+	if len(issues) == 0 {
+		fmt.Println("required: you're good to go ~ no issues found")
+		return
 	}
-	return !v.IsZero()
+	for i := 0; i < len(issues); i++ {
+		fmt.Printf("----------\n")
+		for _, j := range issues[i] {
+			fmt.Printf("%v:Field: %s\n\t Issue: %s\n", j.Struct, j.Name, j.Err)
+		}
+		fmt.Printf("----------\n")
+	}
 }

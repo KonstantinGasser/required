@@ -13,9 +13,7 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 - `intX/uintX/floatX` -> obvious, right?
 - `slices` -> length check
 
-## Excluded types where tag has no effect
-- `bool`: will be ignored
-- `struct`: if struct is the empty struct validation will fail
+
 
 ## Example
 ```go
@@ -34,7 +32,7 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
     // will fail if:
     // - len(user.Username) < 6 or > 25
     // - len(user.Password) < 12
-    if err := required.All(&user); err != nil {
+    if err := required.Atomic(&user); err != nil {
         log.Fatalf("Not all fields in the User struct satisfy the tag conditions: %v", err)
     }
 
@@ -44,10 +42,11 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 ```
 
 ## Benchmarks
-| Benchmark                | iters  | ns/op        | B/op      | allocs/op      |
-|:------------------------ |-------:|------------:| ---------:| --------------:|
-|BenchmarkAllMinMax-16     | 291532 |4119 ns/op  | 1200 B/op |  40 allocs/op  |
-|BenchmarkAllNoOptions-16  | 932673 |1410 ns/op  | 240 B/op  | 20 allocs/op   |
-|BenchmarkAllMix-16        | 599694 |1820 ns/op  | 456 B/op  | 20 allocs/op   |
+| Benchmark                | iters  | ns/op      | B/op      | allocs/op     |
+|:------------------------ |-------:|-----------:| ---------:| -------------:|
+|BenchmarkAllMinMax-16     | 288800 |3756 ns/op  | 1200 B/op | 40 allocs/op  |
+|BenchmarkAllNoOptions-16  | 934557 |1217 ns/op  | 240 B/op  | 20 allocs/op  |
+|BenchmarkAllMix-16        | 687088 |1698 ns/op  | 456 B/op  | 20 allocs/op  |
 
 \*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`
+
