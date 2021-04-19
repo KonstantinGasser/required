@@ -26,8 +26,8 @@ import (
 )
 
 type User struct {
-    Username string `required:"yes, min=6, max=25"`
-    Password string `required:"yes, min=12"`
+    Username string `required:"yes" min:"6" max"25"`
+    Password string `required:"yes" min:"12"`
 }
 
 func HandlerLogin(w http.ResponseWriter, r *http.Request) {
