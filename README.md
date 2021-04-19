@@ -17,7 +17,13 @@ Small module helping you validating structs in Go. By adding `required:"yes"` to
 
 ## Example
 ```go
-import "github.com/KonstantinGasser/required"
+import (
+     "encoding/json"
+     "log"
+     "net/http"
+    
+     "github.com/KonstantinGasser/required"
+)
 
 type User struct {
     Username string `required:"yes, min=6, max=25"`
