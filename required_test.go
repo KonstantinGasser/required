@@ -6,216 +6,246 @@ import (
 	"github.com/matryer/is"
 )
 
-type AtomicSimple struct {
-	A string `required:"yes"`
-	B int    `required:"yes"`
+type TestRequiredOnly struct {
+	A string   `required:"yes"`
+	B int      `required:"yes"`
+	C []string `required:"yes"`
 }
 
-func TestAtomicSimple(t *testing.T) {
+func TestAtomicRequiredOnly(t *testing.T) {
 	is := is.New(t)
 
 	tt := []struct {
-		v   AtomicSimple
+		v   TestRequiredOnly
 		err error
 	}{
 		{
-			v: AtomicSimple{
-				A: "Konstantin",
-				B: 42,
+			v: TestRequiredOnly{
+				A: "hello world",
+				B: 24,
+				C: []string{"hello", "friend"},
 			},
 			err: nil,
 		},
 		{
-			v: AtomicSimple{
-				A: "",
-				B: 42,
+			v: TestRequiredOnly{
+				A: "hello world",
+				B: 24,
+				C: nil,
 			},
 			err: ErrDefaultFound,
 		},
 		{
-			v: AtomicSimple{
-				A: "Konstantin",
+			v: TestRequiredOnly{
+				A: "hello world",
 				B: 0,
+				C: []string{"hello", "friend"},
 			},
 			err: ErrDefaultFound,
 		},
 	}
 
-	for _, t := range tt {
-		err := Atomic(&t.v)
-		is.Equal(t.err, err)
+	for _, tc := range tt {
+		err := Atomic(&tc.v)
+		is.Equal(err, tc.err)
 	}
 }
 
-type AtomicMinMax struct {
-	A string  `required:"yes, min=4, max=6"`
-	B int     `required:"yes, min=3,max=12"`
-	C float32 `required:"yes, min=1, max=2"`
+type TestMinMax struct {
+	A string   `required:"yes" min:"4" max:"25"`
+	B int      `required:"yes" min:"100" max:"150"`
+	C []string `required:"yes" min:"1"`
+	D uint16   `required:"yes" max:"24"`
+	E float64  `required:"yes" min:"1" max:"2"`
 }
 
 func TestAtomicMinMax(t *testing.T) {
-
 	is := is.New(t)
 
 	tt := []struct {
-		v   *AtomicMinMax // setting v as pointer allows to check for nil
+		v   TestMinMax
 		err error
 	}{
 		{
-			v:   nil,
-			err: ErrInvalidType,
-		},
-		{
-			// all fields ok
-			v: &AtomicMinMax{
-				A: "hello",
-				B: 8,
-				C: float32(1.1),
+			v: TestMinMax{
+				A: "hello world",
+				B: 124,
+				C: []string{"index_0", "index_1"},
+				D: uint16(24),
+				E: float64(1.99),
 			},
 			err: nil,
 		},
 		{
-			// string condition not ok
-			v: &AtomicMinMax{
-				A: "Konstantin",
-				B: 8,
-				C: float32(1.1),
+			v: TestMinMax{
+				A: "hel",
+				B: 124,
+				C: []string{"index_0", "index_1"},
+				D: uint16(24),
+				E: float64(1.99),
 			},
 			err: ErrConditionFail,
 		},
 		{
-			// int condition not ok
-			v: &AtomicMinMax{
-				A: "Konstantin",
-				B: 2,
-				C: float32(1.1),
+			v: TestMinMax{
+				A: "hello world, hello friend, hello everyone",
+				B: 124,
+				C: []string{"index_0", "index_1"},
+				D: uint16(24),
+				E: float64(1.99),
 			},
 			err: ErrConditionFail,
 		},
 		{
-			// float32 condition not ok
-			v: &AtomicMinMax{
-				A: "Konstantin",
-				B: 8,
-				C: float32(2.01),
+			v: TestMinMax{
+				A: "hello world",
+				B: 42,
+				C: []string{"index_0", "index_1"},
+				D: uint16(24),
+				E: float64(1.99),
+			},
+			err: ErrConditionFail,
+		},
+		{
+			v: TestMinMax{
+				A: "hello world",
+				B: 142,
+				C: []string{"index_0", "index_1"},
+				D: uint16(24),
+				E: float64(0.45),
+			},
+			err: ErrConditionFail,
+		},
+		{
+			v: TestMinMax{
+				A: "hello world",
+				B: 142,
+				C: []string{},
+				D: uint16(24),
+				E: float64(1.45),
 			},
 			err: ErrConditionFail,
 		},
 	}
 
-	for _, t := range tt {
-		err := Atomic(t.v)
-		is.Equal(t.err, err)
-
+	for _, tc := range tt {
+		err := Atomic(&tc.v)
+		is.Equal(err, tc.err)
 	}
 }
 
-type BenchTestMinMax struct {
-	A string `required:"yes, min=2,max=25"`
-	B string `required:"yes, min=2,max=25"`
-	C string `required:"yes, min=2,max=25"`
-	D string `required:"yes, min=2,max=25"`
-	E string `required:"yes, min=2,max=25"`
-	F string `required:"yes, min=2,max=25"`
-	G string `required:"yes, min=2,max=25"`
-	H string `required:"yes, min=2,max=25"`
-	I string `required:"yes, min=2,max=25"`
-	J string `required:"yes, min=2,max=25"`
+type TestNoTag struct {
+	A string
+	B int
 }
 
-var r error
+func TestAtomicNoTag(t *testing.T) {
+	is := is.New(t)
 
-func BenchmarkAllMinMax(b *testing.B) {
+	tt := []struct {
+		v   TestNoTag
+		err error
+	}{
+		{
+			v:   TestNoTag{},
+			err: nil,
+		},
+		{
+			v: TestNoTag{
+				A: "",
+				B: 42,
+			},
+			err: nil,
+		},
+		{
+			v: TestNoTag{
+				A: "hello",
+				B: 0,
+			},
+			err: nil,
+		},
+	}
+
+	for _, tc := range tt {
+		err := Atomic(&tc.v)
+		is.Equal(err, tc.err)
+	}
+}
+
+type TestStruct struct {
+	a string
+}
+type BenchRequiredOnly struct {
+	A string     `required:"yes"`
+	B int        `required:"yes"`
+	C []string   `required:"yes"`
+	D uint16     `required:"yes"`
+	E float64    `required:"yes"`
+	F string     `required:"yes"`
+	G []byte     `required:"yes"`
+	H string     `required:"yes"`
+	I int16      `required:"yes"`
+	J TestStruct `required:"yes"`
+}
+
+var benchRes1 error
+
+func BenchmarkRequired(b *testing.B) {
 	b.ReportAllocs()
-	tt := BenchTestMinMax{
+
+	t := BenchRequiredOnly{
 		A: "hello world",
-		B: "hello world",
-		C: "hello world",
-		D: "hello world",
-		E: "hello world",
-		F: "hello world",
-		G: "hello world",
-		H: "hello world",
-		I: "hello world",
-		J: "hello world",
+		B: 24,
+		C: []string{"hello", "friend"},
+		D: uint16(42),
+		E: float64(64),
+		F: "konstantin.gasser@com",
+		G: []byte("mr. robot"),
+		H: "KonstantinGasser",
+		I: int16(16),
+		J: TestStruct{a: "kgasser"},
 	}
-	var rr error
-	for n := 0; n < b.N; n++ {
-		rr = Atomic(&tt)
-	}
-	r = rr
-}
-
-type BenchTest struct {
-	A string   `required:"yes"`
-	B int16    `required:"yes"`
-	C []string `required:"yes"`
-	D string   `required:"yes"`
-	E float64  `required:"yes"`
-	F uint32   `required:"yes"`
-	G []int    `required:"yes"`
-	H int64    `required:"yes"`
-	I string   `required:"yes"`
-	J string   `required:"yes"`
-}
-
-var result error
-
-func BenchmarkAllNoOptions(b *testing.B) {
-	b.ReportAllocs()
-	tt := BenchTest{
-		A: "hello world",
-		B: int16(16),
-		C: []string{"hello", "world"},
-		D: "hello world",
-		E: float64(64.64),
-		F: uint32(32),
-		G: []int{1, 2200, 444567, 1337},
-		H: int64(2000010),
-		I: "hello world",
-		J: "J is the last field in the struct",
-	}
-
 	var err error
 	for n := 0; n < b.N; n++ {
-		err = Atomic(&tt)
+		err = Atomic(&t)
 	}
+	benchRes1 = err
 
-	result = err
 }
 
-type BenchTestMix struct {
-	A string   `required:"yes" m:"jhk"`
-	B int16    `required:"yes, min=2, max=200"`
-	C []string `required:"yes, min=1"`
-	D string   `required:"yes, min=5,max=12"`
-	E float64  `required:"yes"`
-	F uint32   `required:"yes"`
-	G []int    `required:"yes, max=20"`
-	H int64    `required:"yes"`
-	I string   `required:"yes"`
+type BenchMinMax struct {
+	A string   `required:"yes" min:"4" max:"15"`
+	B int      `required:"yes" min:"4"`
+	C []string `required:"yes" min:"2"`
+	D uint16   `required:"yes" min:"4" max:"15"`
+	E float64  `required:"yes" min:"7" max:"10"`
+	F string   `required:"yes" max:"15"`
+	G []byte   `required:"yes" min:"1"`
+	H string   `required:"yes" min:"15" max:"35"`
+	I int16    `required:"yes" min:"400"`
+	J int16    `required:"yes" min:"4"`
 }
 
-var result3 error
+var benchRes2 error
 
-func BenchmarkAllMix(b *testing.B) {
+func BenchmarkMinMax(b *testing.B) {
 	b.ReportAllocs()
-	tt := BenchTestMix{
-		A: "hello world",
-		B: int16(16),
-		C: []string{"hello", "world"},
-		D: "hello world",
-		E: float64(64.64),
-		F: uint32(32),
-		G: []int{1, 2200, 444567, 1337},
-		H: int64(2000010),
-		I: "hello world",
-	}
 
+	t := BenchMinMax{
+		A: "hello world",
+		B: 24,
+		C: []string{"hello", "friend"},
+		D: uint16(14),
+		E: float64(9.314),
+		F: "konstantin",
+		G: []byte("mr. robot"),
+		H: "KonstantinGasser@Konstantin.com",
+		I: int16(1600),
+		J: int16(5),
+	}
 	var err error
 	for n := 0; n < b.N; n++ {
-		err = Atomic(&tt)
+		err = Atomic(&t)
 	}
-
-	result3 = err
+	benchRes2 = err
 }

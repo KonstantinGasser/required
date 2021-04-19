@@ -13,57 +13,54 @@ func TestIsValid(t *testing.T) {
 	tt := []struct {
 		v        reflect.Value
 		min, max int
-		ok       bool
+		err      error
 	}{
-		{
-			// checks for recover
-			v:   reflect.ValueOf(nil),
-			min: 4,
-			max: 32,
-			ok:  false,
-		},
 		{
 			v:   reflect.ValueOf(int(32)),
 			min: 4,
 			max: 32,
-			ok:  true,
+			err: nil,
 		},
 		{
 			v:   reflect.ValueOf(uint(32)),
 			min: 4,
 			max: 30,
-			ok:  false,
+			err: ErrConditionFail,
 		},
 		{
 			v:   reflect.ValueOf("KonstantinGasser"),
 			min: 12,
 			max: 25,
-			ok:  true,
+			err: nil,
 		},
 		{
 			v:   reflect.ValueOf("Gasser"),
 			min: 12,
 			max: 25,
-			ok:  false,
+			err: ErrConditionFail,
 		},
 		{
 			v:   reflect.ValueOf([]int{}),
 			min: 1,
 			max: 0,
-			ok:  false,
+			err: ErrConditionFail,
 		},
 		{
 			v:   reflect.ValueOf([]int{1, 2, 3}),
 			min: 3,
 			max: 10,
-			ok:  true,
+			err: nil,
+		},
+		{
+			v:   reflect.ValueOf(int(12)),
+			min: 10,
+			max: 3,
+			err: ErrMaxLowerMin,
 		},
 	}
 
 	for _, t := range tt {
-		minValue = t.min
-		maxValue = t.max
-		ok := isValid(t.v)
-		is.Equal(t.ok, ok)
+		err := isValid(t.v, t.min, t.max)
+		is.Equal(t.err, err)
 	}
 }
