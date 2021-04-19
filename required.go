@@ -2,6 +2,7 @@ package required
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -61,4 +62,46 @@ func Atomic(vs ...interface{}) error {
 		}
 	}
 	return nil
+}
+
+// Debug does the same as Atomic does however, if a condition is not meet,
+// the issue will be collected and at the end returned as debug information.
+// For a more readable output-format user Debug(&v).Pretty()
+func Debug(vs ...interface{}) *Info {
+	var info Info
+	for i, v := range vs {
+		info = append(info, make([]Problem, 0))
+		if ok := isAllowedType(v); !ok {
+			info.issue(i, "Struct", "-", fmt.Sprintf("%d. element in arguments is no a pointer to a struct", i))
+			continue
+		}
+		currElem := reflect.ValueOf(v).Elem()
+		for j := 0; j < currElem.NumField(); j++ {
+			tag := currElem.Type().Field(j).Tag
+			_, ok := tag.Lookup("required")
+			if !ok {
+				continue
+			}
+			field := currElem.Field(j)
+			if ok := isNotZero(field); !ok {
+				info.issue(i, currElem.Type().Name(), currElem.Type().Field(j).Name, "field has default value")
+				continue
+			}
+			optMin, err := getOpt("min", tag)
+			if err != nil {
+				info.issue(i, currElem.Type().Name(), currElem.Type().Field(j).Name, err.Error())
+				continue
+			}
+			optMax, err := getOpt("max", tag)
+			if err != nil {
+				info.issue(i, currElem.Type().Name(), currElem.Type().Field(j).Name, err.Error())
+				continue
+			}
+			if err := isValid(field, optMin, optMax); err != nil {
+				info.issue(i, currElem.Type().Name(), currElem.Type().Field(j).Name, err.Error())
+				continue
+			}
+		}
+	}
+	return &info
 }

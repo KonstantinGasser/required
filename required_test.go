@@ -172,6 +172,51 @@ func TestAtomicNoTag(t *testing.T) {
 	}
 }
 
+type TestDebugSimple struct {
+	A string `required:"yes"`
+	B string `required:"yes" min:"2"`
+	C int    `required:"yes" max:"six"`
+}
+
+func TestDebug(t *testing.T) {
+	is := is.New(t)
+
+	tt := []struct {
+		v        TestDebugSimple
+		issueLen int
+	}{
+		{
+			v: TestDebugSimple{
+				A: "",
+				B: "l",
+				C: 42,
+			},
+			issueLen: 3,
+		},
+		{
+			v: TestDebugSimple{
+				A: "hello",
+				B: "l",
+				C: 42,
+			},
+			issueLen: 2,
+		},
+		{
+			v: TestDebugSimple{
+				A: "hey",
+				B: "it's me again",
+				C: 42,
+			},
+			issueLen: 1,
+		},
+	}
+
+	for _, tc := range tt {
+		info := Debug(&tc.v)
+		is.Equal(len((*info)[0]), tc.issueLen)
+	}
+}
+
 type TestStruct struct {
 	a string
 }

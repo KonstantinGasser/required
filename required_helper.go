@@ -48,7 +48,7 @@ func isValid(value reflect.Value, minValue, maxValue int) error {
 }
 
 func isAllowedType(v interface{}) bool {
-	return v != nil && !reflect.ValueOf(v).IsNil() && reflect.ValueOf(v).Kind() == reflect.Ptr
+	return v != nil && reflect.ValueOf(v).Kind() == reflect.Ptr && !reflect.ValueOf(v).IsNil()
 }
 
 func isNotZero(v reflect.Value) bool {
@@ -71,4 +71,35 @@ func getOpt(opt string, tag reflect.StructTag) (int, error) {
 		return 0, ErrNotANumber
 	}
 	return i, nil
+}
+
+// Info hols problems which occurred during a debug run
+type Info [][]Problem
+
+// Problem holds information about what
+// caused the problem
+type Problem struct {
+	Struct, Field, Err string
+}
+
+func (info *Info) issue(i int, where, field, err string) {
+	(*info)[i] = append((*info)[i], Problem{
+		Struct: where,
+		Field:  field,
+		Err:    err,
+	})
+}
+
+// Pretty prints the Debug info in a nice way to look at
+func (info *Info) Pretty() {
+	if len(*info) == 0 {
+		fmt.Println("required: No issues found while debugging")
+		return
+	}
+
+	for i := 0; i < len(*info); i++ {
+		for j := 0; j < len((*info)[i]); j++ {
+			fmt.Printf("Where: %s\n\tField: %s\n\tErr: %s\n", (*info)[i][j].Struct, (*info)[i][j].Field, (*info)[i][j].Err)
+		}
+	}
 }

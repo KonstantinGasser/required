@@ -1,14 +1,14 @@
 # required [![GoDoc](https://godoc.org/github.com/KonstantinGasser/required?status.png)](http://godoc.org/github.com/KonstantinGasser/required) ![Go Report Card](https://goreportcard.com/badge/github.com/KonstantinGasser/required) [![codecov](https://codecov.io/gh/KonstantinGasser/required/branch/main/graph/badge.svg)](https://codecov.io/gh/KonstantinGasser/required) ![](https://travis-ci.com/KonstantinGasser/required.svg?branch=main)
 
 
-Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value and if required add conditions.
+Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value and satisfies the provided options `min` and `max`.
 
 ## Usage
 
 - `required:"yes"`: only checks if value not the default of type
-- `required:"yes, min=2, max=4"`: checks if value not the default and checks for conditions
+- `required:"yes" min:"2" max"4"`: checks if value not the default and checks for conditions
 
-`min` and `max` works for following types:
+`min` and `max` works for following types (min and max are both inclusive):
 - `string` -> length check
 - `intX/uintX/floatX` -> obvious, right?
 - `slices` -> length check
@@ -42,11 +42,10 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 ```
 
 ## Benchmarks
-| Benchmark                | iters  | ns/op      | B/op      | allocs/op     |
-|:------------------------ |-------:|-----------:| ---------:| -------------:|
-|BenchmarkAllMinMax-16     | 288800 |3756 ns/op  | 1200 B/op | 40 allocs/op  |
-|BenchmarkAllNoOptions-16  | 934557 |1217 ns/op  | 240 B/op  | 20 allocs/op  |
-|BenchmarkAllMix-16        | 687088 |1698 ns/op  | 456 B/op  | 20 allocs/op  |
+| Benchmark           | iters  | ns/op      | B/op    | allocs/op     |
+|:------------------- |-------:|-----------:| -------:| -------------:|
+|BenchmarkRequired-16 | 699244 |1473 ns/op  | 80 B/op | 10 allocs/op  |
+|BenchmarkMinMax-16   | 592780 |2012 ns/op  | 80 B/op | 10 allocs/op  |
 
-\*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes,min=4,max=15"`
+\*first benchmark is only a struct with `required:"yes"`, the second one with `required:"yes" min:"4" max:"15"`
 
