@@ -1,4 +1,4 @@
-# required [![GoDoc](https://godoc.org/github.com/KonstantinGasser/required?status.png)](http://godoc.org/github.com/KonstantinGasser/required) ![Go Report Card](https://goreportcard.com/badge/github.com/KonstantinGasser/required) [![codecov](https://codecov.io/gh/KonstantinGasser/required/branch/main/graph/badge.svg)](https://codecov.io/gh/KonstantinGasser/required) ![](https://travis-ci.com/KonstantinGasser/required.svg?branch=main)
+# required [![GoDoc](https://godoc.org/github.com/KonstantinGasser/required?status.png)](http://godoc.org/github.com/KonstantinGasser/required) ![Go Report Card](https://goreportcard.com/badge/github.com/KonstantinGasser/required) [![codecov](https://codecov.io/gh/KonstantinGasser/required/branch/main/graph/badge.svg)](https://codecov.io/gh/KonstantinGasser/required)
 
 
 Small module helping you validating structs in Go. By adding `required:"yes"` to a struct field, you can ensure that it will not be the default value and satisfies the provided options `min` and `max`.
